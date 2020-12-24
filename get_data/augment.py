@@ -1,53 +1,54 @@
 import random
 import numpy as np
-
-
-def BGR2RGB(self,img):
+import torch
+import cv2
+def BGR2RGB(img):
     return cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
-def BGR2HSV(self,img):
+def BGR2HSV(img):
     return cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
-def HSV2BGR(self,img):
+def HSV2BGR(img):
     return cv2.cvtColor(img,cv2.COLOR_HSV2BGR)
 
-def RandomBrightness(self,bgr):
+def RandomBrightness(bgr):
     if random.random() < 0.5:
-        hsv = self.BGR2HSV(bgr)
+        hsv = BGR2HSV(bgr)
         h,s,v = cv2.split(hsv)
         adjust = random.choice([0.5,1.5])
         v = v*adjust
         v = np.clip(v, 0, 255).astype(hsv.dtype)
         hsv = cv2.merge((h,s,v))
-        bgr = self.HSV2BGR(hsv)
+        bgr = HSV2BGR(hsv)
     return bgr
-def RandomSaturation(self,bgr):
+def RandomSaturation(bgr):
     if random.random() < 0.5:
-        hsv = self.BGR2HSV(bgr)
+        hsv = BGR2HSV(bgr)
         h,s,v = cv2.split(hsv)
         adjust = random.choice([0.5,1.5])
         s = s*adjust
         s = np.clip(s, 0, 255).astype(hsv.dtype)
         hsv = cv2.merge((h,s,v))
-        bgr = self.HSV2BGR(hsv)
+        bgr = HSV2BGR(hsv)
     return bgr
-def RandomHue(self,bgr):
+
+def RandomHue(bgr):
     if random.random() < 0.5:
-        hsv = self.BGR2HSV(bgr)
+        hsv = BGR2HSV(bgr)
         h,s,v = cv2.split(hsv)
         adjust = random.choice([0.5,1.5])
         h = h*adjust
         h = np.clip(h, 0, 255).astype(hsv.dtype)
         hsv = cv2.merge((h,s,v))
-        bgr = self.HSV2BGR(hsv)
+        bgr = HSV2BGR(hsv)
     return bgr
-def randomBlur(self,bgr):
+def randomBlur(bgr):
     if random.random()<0.5:
         bgr = cv2.blur(bgr,(5,5))
     return bgr
 
-def randomShift(self,bgr,boxes,labels):
+def randomShift(bgr,boxes,labels):
     #平移变换
     center = (boxes[:,2:]+boxes[:,:2])/2
-    if random.random() <0.5:
+    if random.random() >0.8:
         height,width,c = bgr.shape
         after_shfit_image = np.zeros((height,width,c),dtype=bgr.dtype)
         after_shfit_image[:,:,:] = (104,117,123) #bgr
@@ -78,8 +79,8 @@ def randomShift(self,bgr,boxes,labels):
         return after_shfit_image,boxes_in,labels_in
     return bgr,boxes,labels
 
-def randomCrop(self,bgr,boxes,labels):
-    if random.random() < 0.5:
+def randomCrop(bgr,boxes,labels):
+    if random.random() > 0.7:
         center = (boxes[:,2:]+boxes[:,:2])/2
         height,width,c = bgr.shape
         h = random.uniform(0.6*height,height)
@@ -109,9 +110,9 @@ def randomCrop(self,bgr,boxes,labels):
         return img_croped,boxes_in,labels_in
     return bgr,boxes,labels
 
-def randomScale(self,bgr,boxes):
+def randomScale(bgr,boxes):
     #固定住高度，以0.8-1.2伸缩宽度，做图像形变
-    if random.random() < 0.5:
+    if random.random() < 0.4:
         scale = random.uniform(0.8,1.2)
         height,width,c = bgr.shape
         bgr = cv2.resize(bgr,(int(width*scale),height))
@@ -120,13 +121,13 @@ def randomScale(self,bgr,boxes):
         return bgr,boxes
     return bgr,boxes
 
-def subMean(self,bgr,mean):
+def subMean(bgr,mean):
     mean = np.array(mean, dtype=np.float32)
     bgr = bgr - mean
     return bgr
 
-def random_flip(self, im, boxes):
-    if random.random() < 0.5:
+def random_flip( im, boxes):
+    if random.random() < 0.3:
         im_lr = np.fliplr(im).copy()
         h,w,_ = im.shape
         xmin = w - boxes[:,2]
@@ -135,9 +136,28 @@ def random_flip(self, im, boxes):
         boxes[:,2] = xmax
         return im_lr, boxes
     return im, boxes
-def random_bright(self, im, delta=16):
+def random_bright(im, delta=16):
     alpha = random.random()
     if alpha > 0.3:
         im = im * alpha + random.randrange(-delta,delta)
         im = im.clip(min=0,max=255).astype(np.uint8)
     return im
+
+def padding_resize(im,boxes,to_shape):
+    h,w,_ = im.shape
+    factor = min(to_shape[0]/h,to_shape[1]/w)
+    new_h,new_w = int(h*factor),int(w*factor)
+    boxes *= factor
+
+    resized_image = cv2.resize(im,(new_w,new_h))
+    top,left = abs(to_shape[0]-new_h)//2,abs(to_shape[1]-new_w)//2
+    boxes += np.array([left,top,left,top],dtype=np.float32)
+    canvas = np.full((to_shape[0], to_shape[0], 3), 0,dtype=np.float32)
+    canvas[top:top + new_h,left:left + new_w,:] = resized_image
+    # cv2.imshow('img',canvas)
+    return canvas,boxes
+
+
+
+
+    
