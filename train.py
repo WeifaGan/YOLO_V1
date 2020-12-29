@@ -18,6 +18,7 @@ parser.add_argument('--class_num',default=20,type=int,help='the num of class')
 parser.add_argument('--img_dir',type=str,help='the path of image dir')
 parser.add_argument('--txt_path',type=str,help='the path of txt file which contain image name and labels')
 parser.add_argument('--input_size',default=(448,448),type=tuple,help='the input size of model')
+parser.add_argument('--num_worker',default=4,type=int,help='the thread number')
 
 
 args = parser.parse_args()
@@ -32,7 +33,7 @@ trainset = dataset(args.txt_path,args.img_dir,transform_train,args.input_size,ar
             args.bbx_num,args.class_num)
 
 trianloader = torch.utils.data.DataLoader(
-    trainset, batch_size=args.batch_size, shuffle=True, num_workers=2)
+    trainset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_worker)
 
 net = yolov1(args.bbx_num,args.grid_num,args.batch_size).to(device)
 
@@ -56,6 +57,7 @@ for ep in range(args.epochs):
 
 
     lr_scheduler.step()
+    break
 
 
 

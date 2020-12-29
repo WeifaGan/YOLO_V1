@@ -127,7 +127,7 @@ def subMean(bgr,mean):
     return bgr
 
 def random_flip( im, boxes):
-    if random.random() < 0.3:
+    if random.random() < 0.4:
         im_lr = np.fliplr(im).copy()
         h,w,_ = im.shape
         xmin = w - boxes[:,2]
@@ -150,12 +150,12 @@ def padding_resize(im,boxes,to_shape):
     boxes *= factor
 
     resized_image = cv2.resize(im,(new_w,new_h))
-    top,left = abs(to_shape[0]-new_h)//2,abs(to_shape[1]-new_w)//2
+    top,left = (to_shape[0]-new_h)//2,(to_shape[1]-new_w)//2
+    bottom,right = to_shape[0]-new_h-top,to_shape[1]-new_w-left
     boxes += np.array([left,top,left,top],dtype=np.float32)
-    canvas = np.full((to_shape[0], to_shape[0], 3), 0,dtype=np.float32)
-    canvas[top:top + new_h,left:left + new_w,:] = resized_image
-    # cv2.imshow('img',canvas)
-    return canvas,boxes
+    image = cv2.copyMakeBorder(resized_image,top,bottom,left,right,cv2.BORDER_CONSTANT,value=0.)
+   
+    return image,boxes
 
 
 

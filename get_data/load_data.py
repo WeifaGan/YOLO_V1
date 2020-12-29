@@ -3,6 +3,7 @@ from torch.utils import data
 import os
 import sys
 from get_data.augment import *
+import cv2
 
 
 class dataset(data.Dataset):
@@ -51,17 +52,16 @@ class dataset(data.Dataset):
     def __getitem__(self,index):
         frame = self.frames[index]
         image = cv2.imread(os.path.join(self.img_dir,frame))
-
         bbxs = self.bbxs[index]
         labels = self.labels[index]
         image,bbxs,labels = self.augment(image,bbxs,labels)
-
         h,w,_ = image.shape 
         assert (h,w,3)==(self.to_shape[0],self.to_shape[1],3)
 
         bbxs /= torch.tensor([w,h,w,h]).expand_as(bbxs)
         target = self.make_target_label(bbxs,labels)
         image = self.transform(image)
+
         return image,target
 
     def make_target_label(self,bbxs,labels):
@@ -106,17 +106,19 @@ class dataset(data.Dataset):
 
 
     def augment(self,img,bbxs,labels):
-        
-        # cv2.imshow('img_ori',img)
-        # cv2.waitKey(-1)
-        image,bbxs = random_flip(img,bbxs)
-        image = RandomSaturation(img)
-        image = RandomBrightness(img)
-        image,bbxs,labels = randomShift(img,bbxs,labels)
-        # cv2.imshow('img',image)
-        # cv2.waitKey(-1)
-        image,bbxs = padding_resize(image,bbxs,self.to_shape)
+        # for i in bbxs:
+        #     cv2.rectangle(img,(i[0],i[1]),(i[2],i[3]),(0,255,0), 2)
+        # cv2.imshow('image',img)
+        # cv2.waitKey(0)
 
+        # img1 = img.copy()
+        image,bbxs = random_flip(img,bbxs)
+        image = RandomSaturation(image)
+        image = RandomBrightness(image)
+        image,bbxs,labels = randomShift(image,bbxs,labels)
+
+    
+        image,bbxs = padding_resize(image,bbxs,self.to_shape)
 
         return image,torch.tensor(bbxs),torch.tensor(labels)
 
@@ -125,8 +127,9 @@ if __name__ == "__main__":
     txt_path = './get_data/voc2012_trainval.txt' 
     img_dir  = '/media/gwf/D1/Dataset/VOC2012/JPEGImages'
 
-    for i in dataloader(txt_path,img_dir,(448,448),7,2,20,True):
-        print(i)
+    # for i in dataset(txt_path,img_dir,None,(448,448),7,2,20):
+    #     print(i)
+    #     break
 
 
 

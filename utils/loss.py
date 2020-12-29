@@ -43,9 +43,9 @@ class YOLOLoss(nn.Module):
         # count noobj_loss for confidence
         noobj_target = noobj_target[:,:self.bnum*5].contiguous().view(-1,5)
         noobj_predict = noobj_predict[:,:self.bnum*5].contiguous().view(-1,5)
-        noobj_target_c = noobj_target[:,4]
-        noobj_predict_c = noobj_predict[:,4]
-        noobj_loss = functional.mse_loss(noobj_predict_c,noobj_target_c,size_average=False)
+        noobj_target_conf = noobj_target[:,4]
+        noobj_predict_conf = noobj_predict[:,4]
+        noobj_conf_loss = functional.mse_loss(noobj_predict_conf,noobj_target_conf,size_average=False)
 
         # choose the best bounding box to count between the two 
         best_bx_mask = torch.zeros(bbx_predict.size())
@@ -63,11 +63,12 @@ class YOLOLoss(nn.Module):
 
 
         obj_confidence_loss = functional.mse_loss(bbx_predict[:,4],bbx_target[:,4],size_average=False)
-        obj_center_wh_loss = functional.mse_loss(bbx_predict[:,:2],bbx_target[:,:2],size_average=False) + \
-                functional.mse_loss(bbx_predict[:,2:4],bbx_target[:,2:4],size_average=False)
-        obj_class_loss = functional.mse_loss(clss_target,clss_predict,size_average=False)
-        total_loss = self.coord*obj_center_wh_loss +obj_center_wh_loss+obj_class_loss+self.noobj*noobj_loss
+        obj_center_loss = functional.mse_loss(bbx_predict[:,:2],bbx_target[:,:2],size_average=False) 
+        obj_wh_loss = functional.mse_loss(bbx_predict[:,2:4],bbx_target[:,2:4],size_average=False)
+        obj_class_loss = functional.mse_loss(clss_predict,clss_target,size_average=False)
+        total_loss = self.coord*(obj_center_loss +obj_wh_loss)+obj_confidence_loss+self.noobj*noobj_conf_loss+obj_class_loss
         # TODO: sqrt?
+        print(obj_confidence_loss.item(),self.coord*(obj_center_loss.item()+obj_wh_loss.item()),obj_class_loss.item(),self.noobj*noobj_conf_loss.item())
         return total_loss
 
 
